@@ -2,110 +2,200 @@
 
 [日本語](README_JA.md)
 
-**Standalone Solar Autoguider for AstroEQ**
+**Standalone Solar GoTo and Autoguiding Controller for AstroEQ**
 
-AstroEQ Solar Auto Guider is a standalone solar GoTo and autoguiding controller that runs on a Raspberry Pi Zero 2W without a PC. It obtains position and UTC from GPS and connects directly to an AstroEQ equatorial mount controller over USB serial. It detects the center of the Sun in images from a USB V4L2 guide camera and controls RA and DEC using guide rate × pulse duration.
+AstroEQ Solar Auto Guider is a standalone solar GoTo and autoguiding controller running on a Raspberry Pi Zero 2W without a PC. It connects directly to the AstroEQ equatorial mount controller via USB. It obtains the observing location and UTC from GPS, detects the Sun's center using a USB camera, and controls RA and DEC with guiding pulses.
 
-The public stable release includes image-based RA and DEC calibration and uses up to 24 pulses during calibration to take up mechanical play in DEC. The separately developed PHD2-style backlash measurement and automatic compensation feature is excluded from the 16 stable source files.
+The following image shows an example system configuration.
 
-This is an independent, unofficial project. AstroEQ and PHD2/OpenPHDGuiding are unaffiliated with the project and have neither endorsed nor supported it.
+![AstroEQ Solar Auto Guider complete system](images/system.jpeg)
 
-## 1. Controller Exterior
+Across the top, from left to right: a USB GPS receiver, a USB camera attached to the solar guide scope, and the AstroEQ equatorial mount controller. Below them is the AstroEQ Solar Auto Guider developed in this project.
+
+This is an independent, unofficial project. AstroEQ and PHD2/OpenPHDGuiding are not affiliated with it and have not endorsed or supported it.
+
+## 1. Controller
 
 ![AstroEQ Solar Auto Guider controller exterior](images/IMG_5224.jpeg)
 
-A single enclosure houses a 128×128 OLED, status LEDs, the GoTo and HOME switches, and a rotary encoder. The Raspberry Pi starts the controller software at power-on. The system enters the Ready state after the required GPS, AstroEQ, camera, and solar altitude checks pass.
+A 128×128 OLED, status LEDs, GoTo and HOME switches, and a rotary encoder are housed in a single enclosure. At power-on, the Raspberry Pi starts the controller software. The system enters the Ready state after the required GPS, AstroEQ, camera, and solar-altitude checks are complete.
 
 | Display or control | Function |
 |---|---|
-| SH1107 OLED | Displays startup status, manual controls, guide menus, calibration status, settings, and guide camera images |
-| Ready LED (green) | Lights when startup checks pass and the controller is ready to operate |
-| GoTo switch | Starts Solar GoTo from standby |
-| Tracking LED (blue) | Lights when the mount starts tracking |
+| OLED | Displays startup status, manual controls, guide menus, calibration status, settings, and guide camera images |
+| Ready LED (green) | Lights when startup checks pass and solar GoTo is available |
+| GoTo switch | Starts solar GoTo from standby |
+| Tracking LED (blue) | Lights when the mount enters tracking mode |
 | HOME switch | Stops tracking and returns to the position recorded immediately before GoTo |
-| Rotary encoder | Selects manual moves, guide functions, calibration, and settings. Press the shaft switch to confirm. |
+| Rotary encoder | Selects manual motion, guiding functions, calibration, and settings; press the shaft switch to confirm |
 
-The saved HOME position is a motor counter reference. There is no sensor that detects an absolute home position.
+The recorded HOME position is a motor-counter reference; the system does not support a sensor that detects an absolute home position.
 
 ## 2. Inside the Enclosure
 
 ![Inside the AstroEQ Solar Auto Guider enclosure](images/IMG_5226.jpeg)
 
-The enclosure contains the Raspberry Pi Zero 2W, SH1107 OLED module, front-panel controls, status LEDs, and wiring. The GPS receiver, AstroEQ, and USB V4L2 camera connect through the Raspberry Pi's USB host interface. The stable software uses the Pi GPIO pins directly. The controller contains no AstroEQ firmware or PHD2 components.
+The enclosure houses the Raspberry Pi Zero 2W, OLED module, front-panel controls, status LEDs, and wiring. The GPS receiver, AstroEQ controller, and UVC USB camera connect through the Raspberry Pi's USB host interface.
 
-The photograph documents the tested unit. It provides a partial view of the wiring. Component ratings that the stable source cannot establish are left unspecified.
+This photograph documents the actual unit.
 
 ## 3. Hardware Used
 
-| Item | Tested configuration |
+| Item | Actual configuration |
 |---|---|
 | Computer | Raspberry Pi Zero 2W |
-| OS | Debian 13.7 (trixie), ARM64 |
-| Display | SH1107 OLED, 128×128, I2C address `0x3C` |
-| Controls | GoTo switch, HOME switch, and rotary encoder with a push switch |
-| Status indicators | Ready LED and Tracking LED |
-| GPS | u-blox USB GPS、VID:PID `1546:01A7` |
-| Mount controller | AstroEQ connected directly over USB serial |
-| Guide camera | USB V4L2 camera |
+| Display | 1.5-inch OLED MC01506, 128×128, I2C address `0x3C` |
+| Switches | GoTo switch, HOME switch, and push-button switch |
+| Rotary encoder with push switch | EC12PLGRSDVF-D-25K-24-24C-31/0 |
+| LEDs | Ready LED and Tracking LED |
+| GPS | u-blox USB GPS, VID:PID `1546:01A7` |
+| Mount controller | AstroEQ connected directly via USB serial |
+| Guide camera | UVC USB camera |
 | Main telescope | Telescope used for solar H-alpha imaging in the field test |
-| Guide scope | Solar guide scope fitted to the same equatorial mount |
+| Guide scope | Solar guide scope mounted on the same equatorial mount |
 
 The source code recognizes the following AstroEQ USB IDs.
 
 | AstroEQ USB interface | VID:PID |
 |---|---|
-| Controller with CH340 | `1A86:7523` |
-| Controller with Arduino Mega | `2341:0042` |
+| CH340-equipped controller | `1A86:7523` |
+| Arduino Mega-equipped controller | `2341:0042` |
 
-These are the device detection paths used on the tested hardware. Compatibility with other controllers that share the same USB interface requires separate verification.
+These IDs describe the device-detection paths used for the actual hardware; compatibility is not guaranteed for every controller using the same USB interface.
 
 ### 3.1 Auxiliary Parts, Power, and USB Connections
 
 | Auxiliary part | Purpose and checks |
 |---|---|
-| microSD card | Boot media for the Pi. Verify the capacity and model on the actual unit. |
-| Pi power supply and micro-USB power cable | Used for board power. Verify the actual power path and the supply's output voltage and current ratings. |
-| USB hub and micro-USB OTG adapter or host cable | Example setup for connecting 3 USB devices. Verify the hub model, how it is powered, and the actual connection hardware. |
-| LED current-limiting resistors | Use 1 per LED when driving the LEDs directly from GPIO. Verify the resistance values on the actual unit. |
-| 10 nF capacitors | Install 1 from each encoder input (A and B) to GND, for a total of 2. This wiring is documented in the stable source. |
-| Enclosure, mounting hardware, and wiring | Used to secure and wire the Pi, OLED, LEDs, and controls. Verify the part models on the actual unit. |
+| microSD card | Boot media for the Pi. Verify capacity and model on the actual unit. |
+| Pi power supply and micro-USB power cable | Supplies power to the board. Verify the actual power path and the supply's voltage and current ratings. |
+| USB hub and micro-USB OTG adapter or host cable | Example means of connecting three USB devices. Verify the hub model, its power arrangement, and the actual connection hardware. |
+| LED current-limiting resistors | One resistor per LED when driving LEDs directly from GPIO. Verify the resistor values on the actual unit. |
+| 10 nF capacitors | One from encoder input A to GND and one from B to GND, two total. This wiring is documented in the stable source. |
+| Enclosure, mounting hardware, and wiring | Secures and interconnects the Pi, OLED, LEDs, and controls. Verify actual component models. |
 
-The Raspberry Pi Zero 2W has a micro-USB power input labeled `PWR IN` and a micro-USB data port that can act as a USB host. In the example host setup, connect the data port to the hub's upstream port through an OTG adapter or host cable. Connect the AstroEQ USB serial interface, USB GPS receiver, and USB guide camera to the downstream ports. See the [official Raspberry Pi documentation](https://www.raspberrypi.com/documentation/computers/zero.html) for board specifications. Check the connected devices' specifications and current draw when deciding how to power the Pi and USB peripherals. Connect the mount drive supply according to the AstroEQ and mount specifications.
+The Raspberry Pi Zero 2W has a micro-USB power input labeled `PWR IN` and a micro-USB data port that can serve as a USB host. In the example arrangement, connect the data port to the upstream port of a USB hub through an OTG adapter or host cable. Connect the AstroEQ USB serial interface, USB GPS receiver, and USB guide camera to the hub's downstream ports. Refer to the [official Raspberry Pi documentation](https://www.raspberrypi.com/documentation/computers/zero.html) for board specifications. Determine how to power the Pi and USB devices from their specifications and current requirements. Connect the mount drive power supply according to the AstroEQ and mount specifications.
 
 ## 4. Raspberry Pi Zero GPIO Connections
 
-This project uses **BCM numbers** for GPIOs. Refer to the physical pin column when wiring the header.
+The GPIO numbers used in this project are **BCM numbers**. Do not confuse them with physical header pin numbers.
 
 | Part | BCM GPIO | Physical pin | Connection or function |
 |---|---:|---:|---|
-| Ready LED | GPIO21 | 40 | Ready status output |
-| Tracking LED | GPIO20 | 38 | Tracking status output |
-| GoTo switch | GPIO22 | 15 | Switch input |
-| HOME switch | GPIO26 | 37 | Switch input |
-| Encoder A | GPIO5 | 29 | Linux rotary-encoder overlay input |
-| Encoder B | GPIO6 | 31 | Linux rotary-encoder overlay input |
-| Encoder push switch | GPIO13 | 33 | Selection and long-press input |
+| Ready LED | GPIO21 | 40 | HIGH turns the LED on. Anode—470 Ω current-limiting resistor—GPIO21; cathode to GND. |
+| Tracking LED | GPIO20 | 38 | HIGH turns the LED on. Anode—470 Ω current-limiting resistor—GPIO20; cathode to GND. |
+| GoTo switch | GPIO22 | 15 | Contact between GPIO22 and GND; internal pull-up, active when connected to GND. |
+| HOME switch | GPIO26 | 37 | Contact between GPIO26 and GND; internal pull-up, active when connected to GND. |
+| Rotary encoder A | GPIO5 | 29 | Linux rotary-encoder overlay input; connect 10 nF between A and GND. |
+| Rotary encoder B | GPIO6 | 31 | Linux rotary-encoder overlay input; connect 10 nF between B and GND. |
+| Rotary encoder C | GND | 30 | Ground |
+| Rotary encoder push switch | GPIO13 | 33 | Contact between GPIO13 and GND |
 | OLED SDA | GPIO2 | 3 | I2C data |
 | OLED SCL | GPIO3 | 5 | I2C clock |
+| OLED VCC | 3.3 V | 1 | 3.3 V supply |
+| OLED GND | GND | 6 | Ground |
 
-Use 3.3 V-compatible GPIO wiring. Disconnect power before wiring, use suitable current-limiting resistors for the LEDs, and never apply 5 V directly to a GPIO pin.
+Use 3.3 V-compatible GPIO wiring. Never apply 5 V directly to a GPIO pin.
 
-### 4.1 Additional Wiring Details
+## 5. Operating Procedure
 
-| Part | Wiring and checks |
+AstroEQ Solar Auto Guider is a standalone solar GoTo and autoguiding controller built around the Raspberry Pi Zero 2W. Once startup checks are complete, the operating sequence is solar GoTo, tracking, manual control, autoguiding, and return HOME. This chapter explains operation using photographs of the controller LEDs and OLED screens.
+
+> **Safety:** Use appropriate solar-observation optics and filters. Monitor the mount's range of motion and cables during GoTo, tracking, and HOME operations, and make sure you can disconnect motor drive power in an emergency. The GoTo and HOME switches are not emergency-stop devices.
+
+### 5.1 Ready LED Lights
+
+After power-on, the Raspberry Pi starts the control program and checks the conditions required for GoTo, including GPS positioning, communications with the AstroEQ mount controller, and solar altitude. Once ready, the **green Ready LED** lights and the OLED displays `PRESS GOTO` / `TO START`. At this stage, the solar telescope should be pointed toward the north celestial pole (NCP), with the mount's counterweight shaft vertically downward in the home position.
+
+![Ready LED on and GoTo standby screen](images/ready.jpeg)
+
+If the Ready LED does not light, check the OLED waiting message. `WAITING FOR GPS` indicates that a GPS fix is pending, `NO GPS FIX` indicates that positioning has not succeeded, and `ASTROEQ` / `NO RESPONSE` indicates that AstroEQ is not responding.
+
+### 5.2 GOTO Button
+
+Place the mount in the specified home position (telescope pointing toward the north celestial pole and counterweight shaft vertically downward), and confirm the surrounding area and cables are safe. With the Ready LED lit, press the **GOTO button** to initiate an automatic slew to the Sun.
+
+The OLED first shows `PLEASE WAIT...` and then `SLEWING` / `TO SUN...` once motion begins.
+
+![Display during solar GoTo](images/slewing.jpeg)
+
+The mount rotates automatically during GoTo. Watch for interference involving the telescope and cables, and monitor the movement.
+
+### 5.3 Tracking LED Lights
+
+When the slew to the Sun is complete and tracking begins, the **blue Tracking LED** lights. The guide camera is then initialized. The OLED shows `STARTING` / `CAMERA...` before switching to the `MOUNT MANUAL` screen.
+
+The Tracking LED indicates that **the mount is tracking**. It does not mean that image-based autoguiding corrections have started. Calibration, described below, is required for autoguiding.
+
+### 5.4 Manual Control Mode
+
+After tracking starts, the OLED displays `MOUNT MANUAL`. On this screen, **short-press** the rotary encoder to select an axis and step size, then **turn the knob** to move the mount by small increments.
+
+![MOUNT MANUAL screen](images/mount_manual.jpeg)
+
+| Selection | Axis | Movement per encoder detent |
+|---|---|---:|
+| `RA HI` | RA (right ascension) | 180 arcseconds |
+| `RA LOW` | RA (right ascension) | 20 arcseconds |
+| `DEC HI` | DEC (declination) | 180 arcseconds |
+| `DEC LOW` | DEC (declination) | 20 arcseconds |
+
+The initial selection is `RA HI`. `MOVING...` flashes at the top of the display while the mount is moving. **Long-press the encoder (0.8 seconds or longer)** to switch to the autoguiding screen.
+
+### 5.5 Autoguiding Mode
+
+Long-press the rotary encoder on the manual-control screen to open the autoguiding screen. Before calibration, the status reads `AUTO GUIDE: OFF`. Turn the encoder to select an item and short-press to open it.
+
+![Autoguiding menu](images/auto_guide.jpeg)
+
+#### 5.5.1 SET: Camera and Guiding Settings
+
+Select `SET` to adjust the camera settings and autoguiding correction parameters.
+
+![SET menu](images/auto_guide_set.jpeg)
+
+| Item | Function |
 |---|---|
-| GoTo and HOME switches | Wire GoTo between BCM22 (physical pin 15) and GND, and HOME between BCM26 (physical pin 37) and GND. The inputs use internal pull-ups and are pulled to GND when pressed. |
-| Encoder A, B, and COM | The stable source specifies wiring EC12 terminal A to BCM5 (physical pin 29), B to BCM6 (physical pin 31), and COM to GND. Connect 1 capacitor of 10 nF between A and GND and another between B and GND. |
-| Encoder push switch | Wire the contact between BCM13 (physical pin 33) and GND. The input uses an internal pull-up. |
-| Ready and Tracking LEDs | Ready uses BCM21 (physical pin 40), and Tracking uses BCM20 (physical pin 38). Each output goes HIGH to light its LED. For direct GPIO drive, wire the current-limiting resistor and LED in series from each output, with the cathode toward GND. Verify the actual wiring and resistance values. |
-| SH1107 OLED | SDA uses BCM2 (physical pin 3), and SCL uses BCM3 (physical pin 5). The display uses address `0x3C` on I2C bus 1. Connect the OLED and Pi grounds together. Verify the OLED's VCC terminal, supported supply voltage, actual power source, and the voltage rail used by the SDA and SCL pull-ups. |
-| Power and ground pins | Physical pins 1 and 17 on the Pi header provide 3.3 V. Physical pin 6 is one of the GND pins. These pins have no BCM GPIO numbers. Check the module specifications and actual wiring before powering the OLED. |
+| `CAM DEFAULT` | Restore the default camera settings |
+| `CAM MANUAL` | Adjust camera settings manually |
+| `RA MAX PULSE` | Set the maximum RA correction pulse duration |
+| `DEC MAX PULSE` | Set the maximum DEC correction pulse duration |
+| `GUIDE PERIOD` | Set the interval between guide corrections |
+| `EXIT` | Leave the settings screen |
 
-Verify the OLED board, camera, and switch models, the encoder variant and pinout, and which GND pins the unit uses.
+Opening the settings screen pauses guide corrections. Select `EXIT` to return to the guiding screen.
 
-## 5. Raspberry Pi Zero Setup
+#### 5.5.2 CENTER: Checking the Solar Center
 
-### 5.1 Tested Software Environment
+Select `CENTER` to inspect the solar disc in the guide camera image and the center detected by image processing. `CANNY` indicates high-accuracy center detection using a Canny filter, `OTSU` indicates center detection using Otsu's binary thresholding, and `NO DISK` means the solar disc has not been detected.
+
+![CENTER solar center screen](images/auto_guide_center.jpeg)
+
+Before calibration, confirm that the solar disc fits comfortably inside the image and that the detected center is stable. Short-press to return to the guiding screen.
+
+#### 5.5.3 CALIB: RA and DEC Calibration
+
+Select `CALIB` to display `CAL START` and `BACK`. After checking that the solar image is stable and the mount can move safely, select `CAL START` and short-press to begin calibration.
+
+![CALIB calibration screen](images/auto_guide_calib.jpeg)
+
+During calibration, guide pulses are sent along RA and DEC. The resulting displacement of the solar center is measured to determine **the mapping between camera X/Y axes and mount RA/DEC axes**. Progress displays include `CALIBRATION` / `MEASURING...`, axis and direction with pulse counts such as `RA+ 1` or `DEC- 1`, and measured displacement. Before DEC measurement, a mechanical take-up procedure of up to 24 pulses is performed.
+
+On success, the program returns to the guiding screen. If the startup argument `--enable-guide-after-cal` is supplied as documented, it obtains a guide reference from a stable solar center and then switches to `GUIDE ON`. On failure, `CAL FAILED` is displayed and guide corrections are disabled.
+
+**Important:** Even if `PRESS: BACK` is displayed during calibration, a short press cannot interrupt calibration immediately. Use the independent motor-drive power cutoff if unsafe movement occurs.
+
+### 5.6 HOME Button
+
+To end tracking, first confirm that the return path is safe, then press the **HOME button**. Guiding ends, tracking stops, and, once the stop is confirmed, the mount returns to the position recorded immediately before solar GoTo. The OLED displays `GOTO` / `HOME` / `POSITION` during the return.
+
+![Return to HOME position](images/goto_home.jpeg)
+
+The HOME position is **a reference saved from AstroEQ motor counters**, not an absolute position confirmed by a home sensor. Do not use automatic HOME if lost steps, a power interruption, or manual movement have broken the correspondence between counters and actual mount orientation. After the return, confirm that the mount is stationary. Once it is back at HOME, the Ready LED lights and the controller is again ready for GoTo.
+
+## 6. Raspberry Pi Zero Setup
+
+### 6.1 Tested Software Environment
 
 | Component | Version on the tested stable unit |
 |---|---|
@@ -126,7 +216,7 @@ Verify the OLED board, camera, and switch models, the encoder variant and pinout
 
 The tested unit uses an apt-based system-wide installation without a Python virtual environment. Package versions may change as the Debian repositories are updated.
 
-### 5.2 I2C, USB Host, and Rotary Encoder
+### 6.2 I2C, USB Host, and Rotary Encoder
 
 Add the following settings to `/boot/firmware/config.txt`.
 
@@ -138,7 +228,7 @@ dtoverlay=rotary-encoder,pin_a=5,pin_b=6,relative_axis=1,steps-per-period=2
 
 Reboot after changing the boot configuration. The rotary-encoder overlay creates a Linux input device that the program reads through `evdev`.
 
-### 5.3 System Packages
+### 6.3 System Packages
 
 Install the available Debian packages in a terminal on the Raspberry Pi. Use apt package names for apt and PyPI distribution names for pip.
 
@@ -171,11 +261,9 @@ dpkg-query -W python3-opencv python3-numpy python3-pil python3-serial \
   python3-gpiozero python3-evdev python3-lgpio \
   python3-luma.oled python3-luma.core python3-gps gpsd v4l-utils
 apt-cache policy python3-luma.oled python3-luma.core
-
 /usr/bin/python3 - <<'PY'
 from importlib import import_module
 from importlib.metadata import PackageNotFoundError, version
-
 for name, dist in (
     ("cv2", "opencv-python"), ("numpy", "numpy"), ("PIL", "Pillow"),
     ("serial", "pyserial"), ("gpiozero", "gpiozero"), ("evdev", "evdev"),
@@ -190,7 +278,6 @@ for name, dist in (
         except PackageNotFoundError:
             value = "dpkg-queryの結果を参照"
     print(f"{name}: {value}  {getattr(mod, '__file__', '')}")
-
 from luma.oled.device import sh1107
 PY
 ```
@@ -205,9 +292,9 @@ sudo usermod -aG dialout,video,input,gpio,i2c USERNAME
 
 After changing group memberships, log out and back in or reboot. Before enabling automatic startup, check the OLED at address `0x3C`, V4L2 camera, GPS fix through gpsd, and AstroEQ serial device individually.
 
-### 5.4 Checking Connected Devices
+### 6.4 Checking Connected Devices (If Needed)
 
-Apply the settings in Section 5.2, reboot, and install the dependencies in Section 5.3 before running these checks. Run them as the service user before starting the integrated program. If `lsusb` is unavailable, install `usbutils` with apt.
+Apply the settings in Section 6.2, reboot, and install the dependencies in Section 6.3 before running these checks. Run them as the service user before starting the integrated program. If `lsusb` is unavailable, install `usbutils` with apt.
 
 **OLED**
 
@@ -223,7 +310,6 @@ Verify that I2C bus 1 exists and that the scan shows `3c`. An entry of `UU` mean
 ```bash
 /usr/bin/python3 - <<'PY'
 from evdev import InputDevice, list_devices
-
 for path in list_devices():
     device = InputDevice(path)
     try:
@@ -233,7 +319,7 @@ for path in list_devices():
 PY
 ```
 
-Verify that the service user can see exactly 1 device named `rotary@5`. If it is missing, check the overlay in Section 5.2 and the permissions on `/dev/input/event*`. The push switch uses the separate BCM13 input.
+Verify that the service user can see exactly 1 device named `rotary@5`. If it is missing, check the overlay in Section 6.2 and the permissions on `/dev/input/event*`. The push switch uses the separate BCM13 input.
 
 **GPS and AstroEQ**
 
@@ -246,7 +332,7 @@ gpspipe -w -n 20
 
 Check `lsusb` for GPS ID `1546:01a7` and the AstroEQ VID:PID listed in Chapter 3. In `gpspipe`, confirm that `DEVICES` lists the receiver path and that `TPV` provides a valid fix with UTC, latitude, and longitude. If the receiver appears in the USB listing but is missing from `DEVICES`, check its registration with `gpsd` and inspect `journalctl -u gpsd.service -b --no-pager`.
 
-Match the AstroEQ VID:PID to its device name in the serial port list. Verify that the user has read and write access and that no other process is using the port. Check the AstroEQ response during integrated startup as described in Chapter 6.
+Match the AstroEQ VID:PID to its device name in the serial port list. Verify that the user has read and write access and that no other process is using the port. Check the AstroEQ response during integrated startup as described in Chapter 7.
 
 **USB guide camera**
 
@@ -258,11 +344,9 @@ v4l2-ctl -d /dev/video0 --list-formats-ext
 
 The default device for integrated startup is `/dev/video0`. Verify that this node captures video from the intended camera and check the formats it supports. The stable release requests `YUYV`, 800×600, and 15 fps. The actual format depends on the device and driver. Frame capture is checked during camera initialization after tracking starts.
 
-## 6. Installing the Python Scripts
+## 7. Installing the Python Scripts
 
 Place the repository in the installation directory of your choice. The example uses `/home/pi/AstroEQ-Solar-Auto-Guider`. Substitute your actual user name and path.
-
-Once the official public URL is available, replace the placeholder in the following command to clone the repository.
 
 ```bash
 git clone https://github.com/jun1wata/AstroEQ-Solar-Auto-Guider.git /home/pi/AstroEQ-Solar-Auto-Guider
@@ -291,11 +375,11 @@ python3 -u run_solar_goto_with_oled.py \
 
 The direction arguments depend on the mount. Check both axes under safe conditions before unattended operation. Verify any values taken from another mount before using them.
 
-Run the first manual launch as the account specified in the service's `User` field, before enabling the service in Chapter 7. If the service is already in use, follow the normal shutdown procedure in Chapter 11 and stop the service before launching manually. Keep the old `astroeq-sun.service` and any other AstroEQ control software stopped during the manual launch.
+Run the first manual launch as the account specified in the service's `User` field, before enabling the service in Chapter 8. If the service is already in use, follow the normal shutdown procedure in Chapter 12 and stop the service before launching manually. Keep the old `astroeq-sun.service` and any other AstroEQ control software stopped during the manual launch.
 
-Start with the stationary checks in Chapter 11. Check the terminal log and the OLED indication for the reason the unit is waiting. To end the manual run, confirm that the mount has stopped, then press `Ctrl+C`.
+Start with the stationary checks in Chapter 12. Check the terminal log and the OLED indication for the reason the unit is waiting. To end the manual run, confirm that the mount has stopped, then press `Ctrl+C`.
 
-## 7. Automatic Startup at Power-On
+## 8. Automatic Startup at Power-On
 
 A single systemd service can launch the integrated program. The tested configuration uses `Restart=no` and has no `ExecStartPre` wait for USB devices.
 
@@ -304,14 +388,12 @@ A single systemd service can launch the integrated program. The tested configura
 Description=AstroEQ Solar Auto Guider
 Wants=gpsd.socket
 After=gpsd.socket systemd-udev-trigger.service
-
 [Service]
 Type=simple
 User=pi
 WorkingDirectory=/home/pi/AstroEQ-Solar-Auto-Guider/src
 ExecStart=/usr/bin/python3 -u /home/pi/AstroEQ-Solar-Auto-Guider/src/run_solar_goto_with_oled.py --ra-west-dir 0 --dec-south-dir 1 --enable-guide-after-cal --cal-drift off
 Restart=no
-
 [Install]
 WantedBy=multi-user.target
 ```
@@ -338,9 +420,9 @@ journalctl -u astroeq-solar-auto-guider.service -b --no-pager
 
 An `active` service may still be waiting for a GPS fix or checking devices. Compare the OLED message with the logs above. If the service shows `failed` or exits immediately, look for the first error in the log.
 
-- For `ModuleNotFoundError` or an OLED import error, follow Section 5.3 using the service's `User` and `/usr/bin/python3`.
+- For `ModuleNotFoundError` or an OLED import error, follow Section 6.3 using the service's `User` and `/usr/bin/python3`.
 - For path or permission errors, check `WorkingDirectory`, the script path in `ExecStart`, and the group ownership of the relevant devices.
-- If GPS is still waiting, AstroEQ fails to respond, or the camera fails to appear or start, return to the checks in Section 5.4. Stop the mount safely before inspecting the USB connections.
+- If GPS is still waiting, AstroEQ fails to respond, or the camera fails to appear or start, return to the checks in Section 6.4. Stop the mount safely before inspecting the USB connections.
 
 With `Restart=no`, the service stays stopped after an abnormal exit. Resolve the cause and verify that the mount is stopped and safely positioned before starting it again. If you changed the unit definition, run `sudo systemctl daemon-reload` before starting.
 
@@ -348,21 +430,21 @@ With `Restart=no`, the service stays stopped after an abnormal exit. Resolve the
 sudo systemctl start astroeq-solar-auto-guider.service
 ```
 
-## 8. Controlling the AstroEQ Equatorial Mount Controller
+## 9. Controlling the AstroEQ Equatorial Mount Controller
 
-### 8.1 Direct USB Serial Control
+### 9.1 Direct USB Serial Control
 
 The Raspberry Pi acts as the direct host for AstroEQ, with no PC or ASCOM, INDI, or PHD2 process required. The launcher detects supported USB IDs, opens the AstroEQ serial connection at 9600 bit/s, checks the response, and reads the motor parameters needed for GoTo and guiding.
 
 The integrated configuration assigns a single owner to the physical serial connection. Camera calibration and autoguiding request mount moves through the local guiding interface, keeping the serial connection free of competing sessions.
 
-### 8.2 Solar Center Detection
+### 9.2 Solar Center Detection
 
 The software reads the guide camera as a V4L2 device. Image processing detects the solar limb and calculates the disc's center and radius. Calibration requires a stable center from a short sequence of frames. Missing or excessively scattered center detections cause calibration to fail before those detections can produce a mount move.
 
 The OLED camera view offers the `CANNY`, `OTSU`, and `NONE` display modes. These modes affect the view and leave the meaning of the measured data from the 110-minute test unchanged.
 
-### 8.3 RA and DEC Calibration
+### 9.3 RA and DEC Calibration
 
 Calibration measures the image displacement produced by guide-rate pulses and builds a matrix that maps camera X and Y to mount RA and DEC. The documented service arguments use `--cal-drift off` to disable drift measurement and `--enable-guide-after-cal` to allow autoguiding after successful calibration.
 
@@ -377,25 +459,25 @@ The stable release calibrates in this order.
 
 The stable algorithm uses 95% of the available guide rate and 1000 ms calibration pulses. The target displacement is 180 arcseconds, and the forward measurement is limited to 60 pulses on each axis. These values are the calibration settings in the stable source. They do not represent measured guiding performance.
 
-### 8.4 DEC Mechanical Take-Up (Maximum 24 Pulses)
+### 9.4 DEC Mechanical Take-Up (Maximum 24 Pulses)
 
 Before DEC calibration, the stable source sends DEC pulses in one direction and checks how far the solar center moves between consecutive images. It requires consistent detected motion and stops after a maximum of 24 pulses. Calibration fails if effective take-up cannot be confirmed within that limit.
 
-This step takes up mechanical play before the DEC calibration vector is measured. It is part of the public stable calibration. Backlash measurement and automatic compensation on reversals during normal guiding are separate procedures.
+This procedure removes mechanical play before measuring the DEC calibration vector.
 
-### 8.5 RA and DEC Autoguiding by Rate × Time
+### 9.5 RA and DEC Autoguiding by Rate × Time
 
 After calibration, the software records a fixed guiding reference from stable solar-center samples. For each correction, it converts the X and Y center error using the calibration matrix, selects 1 axis per correction cycle, and drives that axis at the AstroEQ guide rate for the calculated duration. The configured per-axis maximum limits the pulse duration.
 
 In the OLED's `SET` menu, you can change the maximum RA pulse, maximum DEC pulse, and guide period. The guiding UI uses its `--guide-gain` startup argument to calculate the pulse correction. The integrated launcher omits this argument, so the guiding UI uses its default of 0.2. Stable UI defaults include a maximum pulse duration of 500 ms and a guide period of 5 seconds. The software does not generate arbitrary corrections during a brief loss of solar-disc detection and stops guiding if the loss persists.
 
-### 8.6 OLED and Rotary Encoder Operation
+### 9.6 OLED and Rotary Encoder Operation
 
 #### From Startup to Manual Control
 
 When the integrated program starts after power-on, the OLED displays the title `AstroEQ`, `Solar`, `Auto`, `Guider`, followed by the status of the device checks. The messages are `WAITING FOR GPS` while waiting for GPS, `NO GPS FIX` when there is no fix, and `ASTROEQ` / `NO RESPONSE` if AstroEQ fails to respond.
 
-When the green Ready LED lights, the OLED shows `PRESS GOTO` / `TO START`. Complete the checks in Chapter 11 before pressing GoTo. The display shows `PLEASE WAIT...` after accepting the request and `SLEWING` / `TO SUN...` when the mount starts slewing. When tracking starts, the blue Tracking LED lights. The OLED shows `STARTING` / `CAMERA...` during camera initialization, then switches to `MOUNT MANUAL`.
+When the green Ready LED lights, the OLED shows `PRESS GOTO` / `TO START`. Complete the checks in Chapter 12 before pressing GoTo. The display shows `PLEASE WAIT...` after accepting the request and `SLEWING` / `TO SUN...` when the mount starts slewing. When tracking starts, the blue Tracking LED lights. The OLED shows `STARTING` / `CAMERA...` during camera initialization, then switches to `MOUNT MANUAL`.
 
 On the manual screen, short presses cycle through `RA HI` → `RA LOW` → `DEC HI` → `DEC LOW`. The initial selection is `RA HI`. Turn the knob to request relative motion on the selected axis. For 1 detent, the request is 180 arcseconds in HI and 20 arcseconds in LOW. `MOVING...` flashes at the top of the screen while a move is in progress.
 
@@ -411,11 +493,11 @@ Turn the knob to select an item and short-press to open it.
 | `CENTER` | Inspect the solar image and detected center. Short-press to return to the guiding screen. |
 | `CALIB` | Displays `CAL START` and `BACK`. Turn the knob to select `CAL START`, then short-press to start calibration on the mount. |
 
-At the start, `MEASURING...` appears below `CALIBRATION`. During measurement, the OLED shows the axis, direction, and pulse count, such as `RA+ 1` or `DEC- 1`, followed by measured and target displacement in arcseconds. `PRESS: BACK` also appears while calibration is running. Calibration runs synchronously, so pressing the switch cannot interrupt it immediately. If there is a hazard, cut drive power as described in Chapter 11.
+At the start, `MEASURING...` appears below `CALIBRATION`. During measurement, the OLED shows the axis, direction, and pulse count, such as `RA+ 1` or `DEC- 1`, followed by measured and target displacement in arcseconds. `PRESS: BACK` also appears while calibration is running. Calibration runs synchronously, so pressing the switch cannot interrupt it immediately. If there is a hazard, cut drive power as described in Chapter 12.
 
 On success, the program returns to the guiding screen. With the documented startup arguments, it acquires a new reference from a stable solar center while displaying `CAL OK / GUIDE OFF`. The status changes to `GUIDE ON` when guiding is enabled.
 
-On failure, the display shows `CAL FAILED` and `PRESS: BACK`, and guide corrections are disabled. Short-press to return to `CAL START` / `BACK`. Moves already performed are left in place. Check the solar image, mount position, cable clearance, and reason in the log before retrying. DEC take-up follows the procedure in Section 8.4, with a maximum of 24 pulses.
+On failure, the display shows `CAL FAILED` and `PRESS: BACK`, and guide corrections are disabled. Short-press to return to `CAL START` / `BACK`. Moves already performed are left in place. Check the solar image, mount position, cable clearance, and reason in the log before retrying. DEC take-up follows the procedure in Section 9.4, with a maximum of 24 pulses.
 
 #### Pausing Guide Corrections and Returning HOME
 
@@ -423,46 +505,33 @@ Long-press on the guiding screen to switch to `MOUNT MANUAL` and pause automatic
 
 To end tracking as well, confirm that the return path is safe, then press the dedicated HOME switch while tracking. The guiding UI closes and the mount returns to the position saved immediately before GoTo once the program confirms both axes have stopped. During the return, the OLED shows `GOTO` / `HOME` / `POSITION`. Afterward the program checks the standby conditions again and returns to `PRESS GOTO` / `TO START` once they pass.
 
-### 8.7 Development Status of PHD2-Style DEC Backlash Compensation
+## 10. Solar GoTo Calculations
 
-The separately developed feature and the take-up procedure in the public stable release serve different purposes.
-
-| Item | Status | Included in the 16 stable files in `src` |
-|---|---|---|
-| DEC take-up during calibration (maximum 24 pulses) | Stable implementation used by the public calibration routine | Included |
-| PHD2-style backlash measurement and automatic compensation | Implemented in separate development code | Excluded |
-| Simulated test of the development implementation | Tested in simulation | Test code and results excluded |
-| Automatic compensation test on a physical mount | Unverified | Excluded |
-
-This project makes no claims about hardware performance of the development feature, including RMS improvement, maximum error reduction, or compensation effectiveness. “PHD2-style” describes the design approach. This stable snapshot contains no PHD2 source code.
-
-## 9. Solar GoTo Calculations
-
-### 9.1 Solar Position
+### 10.1 Solar Position
 
 The program obtains UTC and the observing location from GPS and converts UTC to Julian date. It computes the Sun's right ascension and declination using the USNO approximation and obtains its hour angle from local sidereal time.
 
-### 9.2 Angular Motion from Home
+### 10.2 Angular Motion from Home
 
 The mechanical coordinate transform from solar hour angle and declination to RA and DEC motion follows the AstroEQ Solar GoTo implementation tested on the mount. The configured RA-west and DEC-south direction arguments then determine the sign for each axis.
 
 The expected home position has the telescope pointing toward the north celestial pole with the counterweight shaft vertically downward. Image calibration cannot substitute for this mechanical starting position.
 
-### 9.3 Conversion to Motor Counts
+### 10.3 Conversion to Motor Counts
 
 The program converts angles to movement counts using the RA and DEC counts per revolution read from AstroEQ. GoTo uses the controller's 24-bit counters and rejects any movement that the program's signed-difference calculation cannot represent unambiguously.
 
-### 9.4 Home Position Management
+### 10.4 Home Position Management
 
 Immediately before Solar GoTo, the program records the RA and DEC counters as the return reference. HOME stops tracking and requests a return to that reference. The return position can become invalid if missed steps, manual motion, or power loss breaks the correspondence between the counters and the actual mount position.
 
-## 10. Coarse Polar Alignment Using Solar GoTo
+## 11. Coarse Polar Alignment Using Solar GoTo
 
 Solar GoTo can help with coarse polar alignment. Start from the specified home position, run Solar GoTo, and use the mount's altitude and azimuth adjustments to center the safely filtered solar image.
 
 This method provides coarse alignment only. A single solar position cannot independently eliminate both altitude and azimuth errors. Image drift correction by the autoguider does not establish the accuracy of the polar alignment.
 
-## 11. Safety
+## 12. Safety
 
 Use only equipment designed for solar observation. Never view the Sun through an unfiltered optical system, finder, or camera. Use a suitable solar filter or dedicated solar telescope. Inspect the filters, mount, cables, and stops before applying power.
 
@@ -470,36 +539,36 @@ The software provides no independent collision detection. Before the first GoTo,
 
 GoTo, HOME, and the encoder switch send inputs to the software. Reliable emergency stopping requires an independent means of stopping the mount safely, such as immediately cutting motor power. A software or serial communications failure can prevent a stop command from reaching AstroEQ.
 
-### 11.1 Optical and Mechanical Checks
+### 12.1 Optical and Mechanical Checks
 
 Inspect the main telescope, guide scope, and finder separately. For optics that use a front-aperture filter, securely fit a solar filter specified by the manufacturer for that purpose. Check for scratches, tears, loose edges, and anything that could cause it to come off. Use dedicated solar telescopes with the optical configuration and procedures specified by the manufacturer. Remove any unused finder or securely block its front aperture.
 
-Before starting GoTo, set the mount to the mechanical home position in Section 9.2. Point the telescope tube toward the north celestial pole, with the counterweight shaft vertically downward. Verify that the tripod, tube, and counterweights are secure and that the mount is balanced. Route the power, USB, and camera cables with enough slack to avoid wrapping around the axes, pinching, or tension throughout GoTo, tracking, and HOME travel.
+Before starting GoTo, set the mount to the mechanical home position in Section 10.2. Point the telescope tube toward the north celestial pole, with the counterweight shaft vertically downward. Verify that the tripod, tube, and counterweights are secure and that the mount is balanced. Route the power, USB, and camera cables with enough slack to avoid wrapping around the axes, pinching, or tension throughout GoTo, tracking, and HOME travel.
 
-### 11.2 First-Test Sequence
+### 12.2 First-Test Sequence
 
-1. Perform the first stationary checks and drive-direction test with the main telescope, guide scope, and finder protected from hazardous sunlight. Check the devices in Section 5.4 with the mount stationary. On first startup, check the OLED and logs without pressing GoTo. Conditions such as solar altitude can keep the unit in standby.
+1. Perform the first stationary checks and drive-direction test with the main telescope, guide scope, and finder protected from hazardous sunlight. Check the devices in Section 6.4 with the mount stationary. On first startup, check the OLED and logs without pressing GoTo. Conditions such as solar altitude can keep the unit in standby.
 2. Perform the initial drive-direction check while pointing safely away from the Sun. Follow the mount manufacturer's test procedure. Away from the travel limits, move each axis briefly, one at a time, and verify the RA-west and DEC-south directions. If you are unsure about direction or stopping, check the settings and wiring before proceeding to Solar GoTo.
 3. Configure the optics for solar observation and return the mount to mechanical home. Before GoTo, verify that the mount is stopped and check the travel path, cable clearance, and independent means of cutting drive power. Monitor the motion and keep the power cutoff within immediate reach when starting GoTo.
 4. Before calibration, inspect the solar disc and detected center in `CENTER`. Make sure the disc is fully in frame, the center is stable, and there is enough mechanical clearance and room in the image for test moves on both RA and DEC. Then select `CAL START`. Continue to monitor mount motion and the cables after guide corrections start.
 
-### 11.3 Fault Detection and Normal Shutdown
+### 12.3 Fault Detection and Normal Shutdown
 
 The stable release stops automatic corrections if solar-disc detection is lost for more than 3 seconds while guiding or if the image error exceeds the default 35 px threshold when it evaluates a correction. If the image error fails to improve after 3 consecutive corrections, the software logs a warning and continues correcting. Check the mount immediately if you hear unusual noises or notice incorrect movement, cables pulling tight, or the target leaving the field of view.
 
-To stop only automatic corrections, switch from the guiding screen to the manual screen as described in Section 8.6. Solar tracking continues. For normal shutdown, check that the return path is safe and press HOME while tracking. HOME first stops tracking. It moves toward the recorded position only after confirming that the mount has stopped. Verify that the return is complete and the mount is physically stationary.
+To stop only automatic corrections, switch from the guiding screen to the manual screen as described in Section 9.6. Solar tracking continues. For normal shutdown, check that the return path is safe and press HOME while tracking. HOME first stops tracking. It moves toward the recorded position only after confirming that the mount has stopped. Verify that the return is complete and the mount is physically stationary.
 
 If manual movement of an axis, missed steps, or power loss makes the saved position unreliable, avoid automatic HOME and restore the mount position using the equipment's procedure.
 
-### 11.4 Cutting Drive Power in an Emergency
+### 12.4 Cutting Drive Power in an Emergency
 
 Before operation, identify an external power switch or independent cutoff that can immediately remove power from the motors in accordance with the AstroEQ and mount specifications. If there is a risk of collision or entanglement, unexpected motion, or uncertainty that the mount has stopped, use the designated cutoff without waiting for software operations to finish.
 
 Unplugging USB, switching off the Pi, pressing `Ctrl+C`, or stopping the service does not verify that drive power is off or that the mount is stationary. If a communications failure or abnormal exit prevents you from confirming that the stop command reached the mount, cut drive power and verify that motion has stopped. Resolve the cause and check the cables and mount position before restoring power and restarting from mechanical home.
 
-## 12. Current Limitations and Future Work
+## 13. Current Limitations and Future Work
 
-### 12.1 Scope of the Public Stable Release
+### 13.1 Scope of the Public Stable Release
 
 | Feature | Status in the public stable release |
 |---|---|
@@ -507,20 +576,19 @@ Unplugging USB, switching off the Pi, pressing `Ctrl+C`, or stopping the service
 | Solar GoTo and direct AstroEQ control | Included |
 | Solar center detection | Included |
 | Image-based RA and DEC calibration | Included |
-| DEC take-up during calibration (maximum 24 pulses) | Included unchanged |
+| DEC take-up during calibration (maximum 24 pulses) | Included |
 | RA and DEC autoguiding by rate × time | Included |
 | OLED and rotary encoder controls | Included |
-| PHD2-style backlash measurement and automatic compensation | Excluded from the stable snapshot |
 
 This test alone does not establish compatibility with other GPS receivers, cameras, mount mechanisms, or AstroEQ configurations. The system has no absolute home sensor or automatic mechanical collision detection.
 
-### 12.2 Field Test Setup
+### 13.2 Field Test Setup
 
 This photograph shows the test configuration. It includes the equatorial mount, the main telescope used for solar H-alpha imaging, the solar guide scope mounted above it, and the AstroEQ Solar Auto Guider at the lower left.
 
 ![AstroEQ Solar Auto Guider field test setup](images/astroeq_solar_autoguider_test.jpg)
 
-### 12.3 110-Minute Solar Autoguiding Field Test
+### 13.3 110-Minute Solar Autoguiding Field Test
 
 This is a recorded field test of standalone solar autoguiding with a Raspberry Pi Zero 2W and AstroEQ Solar Auto Guider.
 
@@ -532,7 +600,7 @@ The figure shows X and Y movement in arcseconds over approximately 110 minutes. 
 
 The figure shows the measured data as originally plotted. It reports no uncalculated RMS values, maximum errors, correction rates, or comparisons with unguided performance. The test covered the stable rate × time autoguiding implementation. Backlash measurement and automatic compensation were outside its scope.
 
-## 13. License
+## 14. License
 
 The project's original Python source code is released under the MIT License with the existing copyright notice.
 
@@ -560,7 +628,7 @@ Copyright (c) 2026 Junichi Watanabe
 
 Each third-party component remains under its own license. The project's MIT License leaves those terms in effect. Review and comply with AstroEQ's additional terms when redistributing or modifying AstroEQ materials. This project is unofficial and unaffiliated with AstroEQ and PHD2/OpenPHDGuiding.
 
-## 14. References
+## 15. References
 
 | Reference | URL |
 |---|---|
