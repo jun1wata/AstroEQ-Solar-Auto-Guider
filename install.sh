@@ -23,6 +23,8 @@ LUMA_CORE_VERSION="2.4.2"
 LUMA_OLED_VERSION="3.16.0"
 LUMA_CORE_WHEEL_SHA256="5eccbbdfde4b8cd9113d1bd355be6a29041c0b2e7f56e1873a4eed356e9fc582"
 LUMA_OLED_WHEEL_SHA256="2d863b759472b41ef3a75ddb9532100ce1d26042707d43472b5687b673e4e523"
+LUMA_CORE_WHEEL_URL="https://files.pythonhosted.org/packages/6e/d0/f4022b3f17dec1bee5920526b4f2b7850ac2b70cc3420231bd498a828c6b/luma.core-2.4.2-py2.py3-none-any.whl"
+LUMA_OLED_WHEEL_URL="https://files.pythonhosted.org/packages/12/e1/0be3c65fcd315cccf86d8f00633585c23426600f1c1350099cc03d881c01/luma_oled-3.16.0-py3-none-any.whl"
 
 SOURCE_FILES=(
   astroeq_camera_calibration_halfarcsec.py
@@ -124,6 +126,7 @@ done
 [[ -f "$SCRIPT_DIR/scripts/verify_install.sh" ]] || die "missing scripts/verify_install.sh"
 [[ -f "$SCRIPT_DIR/scripts/uninstall.sh" ]] || die "missing scripts/uninstall.sh"
 [[ -f "$SCRIPT_DIR/scripts/config_txt_inspector.py" ]] || die "missing scripts/config_txt_inspector.py"
+[[ -f "$SCRIPT_DIR/scripts/wheel_validator.py" ]] || die "missing scripts/wheel_validator.py"
 
 CURRENT_STEP="detecting the service account"
 if [[ -n "$TARGET_USER_OVERRIDE" ]]; then
@@ -305,15 +308,28 @@ if [[ "$LUMA_VERSIONS" != "$LUMA_CORE_VERSION $LUMA_OLED_VERSION" ]]; then
   (( SERVICE_ACTIVE == 0 )) || die "active service uses unexpected luma versions: ${LUMA_VERSIONS:-missing}"
   WHEEL_DIR="$TEMP_DIR/wheels"
   mkdir -p "$WHEEL_DIR"
-  "$VENV/bin/python" -m pip download --only-binary=:all: --no-deps --dest "$WHEEL_DIR" \
-    "luma.core==$LUMA_CORE_VERSION" "luma.oled==$LUMA_OLED_VERSION"
-  CORE_WHEEL=$(find "$WHEEL_DIR" -maxdepth 1 -type f -iname 'luma_core-2.4.2-*.whl' -print -quit)
-  OLED_WHEEL=$(find "$WHEEL_DIR" -maxdepth 1 -type f -iname 'luma_oled-3.16.0-*.whl' -print -quit)
-  [[ -n "$CORE_WHEEL" && -n "$OLED_WHEEL" ]] || die "expected luma wheels were not downloaded"
-  [[ $(sha256sum "$CORE_WHEEL" | awk '{print $1}') == "$LUMA_CORE_WHEEL_SHA256" ]] || \
-    die "luma.core wheel checksum mismatch"
-  [[ $(sha256sum "$OLED_WHEEL" | awk '{print $1}') == "$LUMA_OLED_WHEEL_SHA256" ]] || \
-    die "luma.oled wheel checksum mismatch"
+  # Use the exact PyPI files whose hashes are pinned above. This avoids a
+  # configured piwheels/extra index selecting different distribution bytes.
+  "$VENV/bin/python" -m pip download --isolated --no-deps --dest "$WHEEL_DIR" \
+    "$LUMA_CORE_WHEEL_URL" "$LUMA_OLED_WHEEL_URL"
+  WHEEL_REPORT="$TEMP_DIR/luma-wheels.tsv"
+  if ! "$VENV/bin/python" -B "$SCRIPT_DIR/scripts/wheel_validator.py" \
+      --directory "$WHEEL_DIR" \
+      --expect luma.core "$LUMA_CORE_VERSION" "$LUMA_CORE_WHEEL_SHA256" \
+      --expect luma.oled "$LUMA_OLED_VERSION" "$LUMA_OLED_WHEEL_SHA256" \
+      >"$WHEEL_REPORT"; then
+    die "downloaded luma wheels failed package, version, or SHA-256 validation"
+  fi
+  CORE_WHEEL=""
+  OLED_WHEEL=""
+  while IFS=$'\t' read -r distribution wheel_path; do
+    case "$distribution" in
+      luma-core) CORE_WHEEL=$wheel_path ;;
+      luma-oled) OLED_WHEEL=$wheel_path ;;
+      *) die "unexpected validated wheel distribution: $distribution" ;;
+    esac
+  done <"$WHEEL_REPORT"
+  [[ -n "$CORE_WHEEL" && -n "$OLED_WHEEL" ]] || die "validated luma wheels are incomplete"
   "$VENV/bin/python" -m pip install --no-index --no-deps "$CORE_WHEEL" "$OLED_WHEEL"
 fi
 
@@ -326,6 +342,7 @@ fi
 install -o root -g root -m 0755 "$SCRIPT_DIR/scripts/verify_install.sh" "$INSTALL_SCRIPTS/verify_install.sh"
 install -o root -g root -m 0755 "$SCRIPT_DIR/scripts/uninstall.sh" "$INSTALL_SCRIPTS/uninstall.sh"
 install -o root -g root -m 0755 "$SCRIPT_DIR/scripts/config_txt_inspector.py" "$INSTALL_SCRIPTS/config_txt_inspector.py"
+install -o root -g root -m 0755 "$SCRIPT_DIR/scripts/wheel_validator.py" "$INSTALL_SCRIPTS/wheel_validator.py"
 (
   cd "$INSTALL_SRC"
   sha256sum "${SOURCE_FILES[@]}"
