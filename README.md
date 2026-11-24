@@ -346,6 +346,38 @@ The default device for integrated startup is `/dev/video0`. Verify that this nod
 
 ## 7. Installing the Python Scripts
 
+### 7.1 One-Command Installer
+
+The supported installer target is a Raspberry Pi Zero 2W running a 64-bit Debian 13 / Trixie-based OS. Configure networking and SSH first, then clone the repository and run the installer once.
+
+```bash
+git clone https://github.com/jun1wata/AstroEQ-Solar-Auto-Guider.git
+cd AstroEQ-Solar-Auto-Guider
+sudo bash install.sh
+```
+
+The installer checks the hardware, OS, apt repositories, disk space, existing services, and boot configuration before making changes. It installs the Debian packages listed in Section 6.3 and uses an isolated Python environment for the tested `luma.core 2.4.2` and `luma.oled 3.16.0` versions. It does not use `--break-system-packages`, start the service, open the AstroEQ serial port, or send motor commands. It backs up `/boot/firmware/config.txt`, adds only missing non-conflicting settings, installs the 16 stable source files under `/opt/astroeq-solar-auto-guider/src`, and enables the service for the next boot.
+
+At the final prompt, reboot when you are ready. In a non-interactive installation, reboot occurs only when explicitly requested.
+
+```bash
+sudo bash install.sh --reboot
+```
+
+After reboot, run the read-only installation and hardware checks. Device checks report missing GPS, AstroEQ, camera, or OLED hardware without issuing AstroEQ commands.
+
+```bash
+sudo bash /opt/astroeq-solar-auto-guider/scripts/verify_install.sh --post-reboot --hardware
+```
+
+To uninstall, first use the normal shutdown procedure in Chapter 12 and verify that the mount is stationary. The uninstaller refuses to stop an active service unless `--stop-active` is explicitly supplied. Managed files and runtime data are moved to `/var/backups/astroeq-solar-auto-guider` rather than deleted, and shared Debian packages are kept.
+
+```bash
+sudo bash /opt/astroeq-solar-auto-guider/scripts/uninstall.sh --stop-active
+```
+
+### 7.2 Manual Installation
+
 Place the repository in the installation directory of your choice. The example uses `/home/pi/AstroEQ-Solar-Auto-Guider`. Substitute your actual user name and path.
 
 ```bash

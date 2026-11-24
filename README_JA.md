@@ -346,6 +346,38 @@ v4l2-ctl -d /dev/video0 --list-formats-ext
 
 ## 7. Pythonスクリプトのインストール
 
+### 7.1 ワンコマンドインストーラ
+
+インストーラの対応対象は、64ビット版Debian 13／Trixie系OSを使用するRaspberry Pi Zero 2Wです。先にネットワークとSSHを設定し、リポジトリをcloneしてインストーラを1回実行します。
+
+```bash
+git clone https://github.com/jun1wata/AstroEQ-Solar-Auto-Guider.git
+cd AstroEQ-Solar-Auto-Guider
+sudo bash install.sh
+```
+
+インストーラは、変更前にハードウェア、OS、aptリポジトリ、空き容量、既存サービス、boot設定を確認します。第6.3節のDebianパッケージを導入し、実機確認済みの`luma.core 2.4.2`と`luma.oled 3.16.0`だけを隔離したPython環境で使用します。`--break-system-packages`は使用せず、サービスの起動、AstroEQシリアルポートのopen、モーターコマンドの送信も行いません。`/boot/firmware/config.txt`をバックアップしてから、不足していて競合しない設定だけを追加し、安定版ソース16本を`/opt/astroeq-solar-auto-guider/src`へ配置して、次回起動用にサービスを有効化します。
+
+最後の確認で、準備ができてから再起動してください。非対話実行では、明示的に指定した場合だけ再起動します。
+
+```bash
+sudo bash install.sh --reboot
+```
+
+再起動後は、次の読み取り中心の検証を実行します。GPS、AstroEQ、カメラ、OLEDが未接続の場合は警告として報告し、AstroEQコマンドは送信しません。
+
+```bash
+sudo bash /opt/astroeq-solar-auto-guider/scripts/verify_install.sh --post-reboot --hardware
+```
+
+アンインストール前には第12章の通常停止を行い、赤道儀が停止していることを確認してください。アンインストーラは`--stop-active`を明示しない限り、動作中のサービスを停止しません。管理対象ファイルと実行データは削除せず`/var/backups/astroeq-solar-auto-guider`へ退避し、他のソフトウェアも使用し得るDebianパッケージは残します。
+
+```bash
+sudo bash /opt/astroeq-solar-auto-guider/scripts/uninstall.sh --stop-active
+```
+
+### 7.2 手動インストール
+
 リポジトリを任意のインストール先へ配置します。以下では`/home/pi/AstroEQ-Solar-Auto-Guider`を例示します。実際のユーザー名とパスに置き換えてください。
 
 ```bash
