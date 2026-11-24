@@ -16,7 +16,13 @@ This is an independent, unofficial project. AstroEQ and PHD2/OpenPHDGuiding are 
 
 ## Quick installation
 
-On a Raspberry Pi Zero 2W running a 64-bit Debian 13 (Trixie) system, set up networking and SSH and make sure Git is available. Then run:
+The standard OS for this project is **Raspberry Pi OS (64-bit)** with the Raspberry Pi Desktop. The installer requires Debian 13 (Trixie) on ARM64.
+
+1. In Raspberry Pi Imager v2.0.12, select **Raspberry Pi Zero 2 W** as the device.
+2. In the OS list, choose the top entry, **Raspberry Pi OS (64-bit)**, whose description is **A port of Debian Trixie with the Raspberry Pi Desktop**.
+3. Configure networking and enable SSH in Imager, then write the OS to the microSD card and boot the Raspberry Pi.
+
+Once the Raspberry Pi is online and Git is available, run:
 
 ```bash
 git clone https://github.com/jun1wata/AstroEQ-Solar-Auto-Guider.git
@@ -373,7 +379,7 @@ The default device for integrated startup is `/dev/video0`. Verify that this nod
 
 ### 7.1 One-Command Installer
 
-The supported installer target is a Raspberry Pi Zero 2W running a 64-bit Debian 13 / Trixie-based OS. Configure networking and SSH first, then clone the repository and run the installer once.
+The installer requires a Raspberry Pi Zero 2 W running Debian 13 (Trixie) on ARM64. For the standard Raspberry Pi OS (64-bit) setup, follow Quick installation above. Configure networking and SSH first, then clone the repository and run the installer once.
 
 ```bash
 git clone https://github.com/jun1wata/AstroEQ-Solar-Auto-Guider.git

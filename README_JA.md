@@ -16,7 +16,13 @@ AstroEQ Solar Auto Guiderは、Raspberry Pi Zero 2Wで動作するPC不要の太
 
 ## 簡単インストール
 
-64ビット版Debian 13（Trixie）系OSを使用するRaspberry Pi Zero 2Wで、ネットワークとSSHを設定し、Gitが使える状態にしてから、次を実行します。
+本プロジェクトの標準インストール対象は、Raspberry Pi Desktop搭載の **Raspberry Pi OS (64-bit)** です。インストーラの対応条件はDebian 13（Trixie）およびARM64です。
+
+1. Raspberry Pi Imager v2.0.12で、デバイスに **Raspberry Pi Zero 2 W** を選択します。
+2. OS一覧の一番上にある **Raspberry Pi OS (64-bit)** を選択します。説明欄には **A port of Debian Trixie with the Raspberry Pi Desktop** と表示されます。
+3. Imagerでネットワークを設定してSSHを有効にし、OSをmicroSDカードに書き込んでRaspberry Piを起動します。
+
+Raspberry Piがネットワークにつながり、Gitが使える状態になったら、次を実行します。
 
 ```bash
 git clone https://github.com/jun1wata/AstroEQ-Solar-Auto-Guider.git
@@ -373,7 +379,7 @@ v4l2-ctl -d /dev/video0 --list-formats-ext
 
 ### 7.1 ワンコマンドインストーラ
 
-インストーラの対応対象は、64ビット版Debian 13／Trixie系OSを使用するRaspberry Pi Zero 2Wです。先にネットワークとSSHを設定し、リポジトリをcloneしてインストーラを1回実行します。
+インストーラの対応対象は、Debian 13（Trixie）をARM64で動かすRaspberry Pi Zero 2 Wです。標準のRaspberry Pi OS (64-bit) の導入は、冒頭の「簡単インストール」を参照してください。先にネットワークとSSHを設定し、リポジトリをcloneしてインストーラを1回実行します。
 
 ```bash
 git clone https://github.com/jun1wata/AstroEQ-Solar-Auto-Guider.git
