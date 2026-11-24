@@ -4,6 +4,7 @@ set -Eeuo pipefail
 SERVICE_NAME="astroeq-solar-auto-guider.service"
 INSTALL_ROOT="/opt/astroeq-solar-auto-guider"
 INSTALL_SRC="$INSTALL_ROOT/src"
+INSTALL_SCRIPTS="$INSTALL_ROOT/scripts"
 VENV="$INSTALL_ROOT/venv"
 RUNTIME_DIR="/var/lib/astroeq-solar-auto-guider"
 STATE_FILE="/var/lib/astroeq-solar-auto-guider-installer/install-state.env"
@@ -136,23 +137,19 @@ PY
   fi
 fi
 
-CONFIG_OK=1
-for required in \
-  'dtparam=i2c_arm=on' \
-  'dtoverlay=dwc2,dr_mode=host' \
-  'dtoverlay=rotary-encoder,pin_a=5,pin_b=6,relative_axis=1,steps-per-period=2'; do
-  if ! awk -v wanted="$required" '
-    /^[[:space:]]*#/ || /^[[:space:]]*$/ { next }
-    { line=$0; sub(/[[:space:]]+#.*$/, "", line); gsub(/[[:space:]]/, "", line) }
-    line == wanted { found=1 }
-    END { exit !found }
-  ' "$BOOT_CONFIG"; then
-    fail "boot setting is missing: $required"
-    CONFIG_OK=0
+if [[ ! -x "$INSTALL_SCRIPTS/config_txt_inspector.py" ]]; then
+  fail "boot configuration inspector is missing"
+else
+  CONFIG_RESULT=0
+  CONFIG_REPORT=$("$VENV/bin/python" -B "$INSTALL_SCRIPTS/config_txt_inspector.py" \
+    --model pi02 --config "$BOOT_CONFIG" 2>&1) || CONFIG_RESULT=$?
+  if (( CONFIG_RESULT != 0 )); then
+    fail "boot configuration inspection failed: $CONFIG_REPORT"
+  elif grep -q $'^MISSING\t' <<<"$CONFIG_REPORT"; then
+    fail "one or more Zero 2 W boot settings are missing: $CONFIG_REPORT"
+  else
+    pass "I2C, USB host, and rotary encoder settings apply to Zero 2 W"
   fi
-done
-if (( CONFIG_OK )); then
-  pass "I2C, USB host, and rotary encoder boot settings"
 fi
 
 if [[ -f "$UNIT_FILE" ]]; then

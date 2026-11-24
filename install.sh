@@ -109,7 +109,7 @@ while (( $# )); do
 done
 
 [[ ${EUID:-$(id -u)} -eq 0 ]] || die "run this installer as root: sudo bash install.sh"
-for command_name in apt-get dpkg getent systemctl systemd-analyze sha256sum find awk grep; do
+for command_name in apt-get dpkg getent python3 systemctl systemd-analyze sha256sum find awk grep; do
   command -v "$command_name" >/dev/null || die "required command is unavailable: $command_name"
 done
 
@@ -123,6 +123,7 @@ for file in "${SOURCE_FILES[@]}"; do
 done
 [[ -f "$SCRIPT_DIR/scripts/verify_install.sh" ]] || die "missing scripts/verify_install.sh"
 [[ -f "$SCRIPT_DIR/scripts/uninstall.sh" ]] || die "missing scripts/uninstall.sh"
+[[ -f "$SCRIPT_DIR/scripts/config_txt_inspector.py" ]] || die "missing scripts/config_txt_inspector.py"
 
 CURRENT_STEP="detecting the service account"
 if [[ -n "$TARGET_USER_OVERRIDE" ]]; then
@@ -249,38 +250,21 @@ if (( BEGIN_COUNT == 1 )) && [[ ! -f "$STATE_FILE" ]]; then
   die "managed boot block exists but installer state is missing"
 fi
 
-mapfile -t CONFIG_ENTRIES < <(
-  awk '
-    /^[[:space:]]*#/ || /^[[:space:]]*$/ { next }
-    /^[[:space:]]*\[/ { section=$0; gsub(/[[:space:]]/, "", section); next }
-    {
-      line=$0
-      sub(/[[:space:]]+#.*$/, "", line)
-      gsub(/[[:space:]]/, "", line)
-      if (line ~ /^dtparam=i2c_arm=/ || line ~ /^dtoverlay=dwc2([,=]|$)/ || line ~ /^dtoverlay=rotary-encoder([,=]|$)/)
-        print section "\t" line
-    }
-  ' "$BOOT_CONFIG"
-)
-
+CONFIG_REPORT="$TEMP_DIR/config-report.tsv"
+if ! python3 "$SCRIPT_DIR/scripts/config_txt_inspector.py" \
+    --model pi02 --config "$BOOT_CONFIG" >"$CONFIG_REPORT"; then
+  die "boot configuration or an included file cannot be evaluated safely"
+fi
 MISSING_CONFIG_LINES=()
-for required in "${REQUIRED_CONFIG_LINES[@]}"; do
-  found=0
-  key=${required%%=*}
-  [[ "$required" == dtoverlay=* ]] && key=${required%%,*}
-  for entry in "${CONFIG_ENTRIES[@]}"; do
-    section=${entry%%$'\t'*}
-    line=${entry#*$'\t'}
-    if [[ "$line" == "$required" ]]; then
-      [[ -z "$section" || "$section" == "[all]" ]] || \
-        die "$required is inside conditional section $section; review manually"
-      found=1
-    elif [[ "$line" == "$key"* ]]; then
-      die "conflicting boot setting: $line"
-    fi
-  done
-  (( found )) || MISSING_CONFIG_LINES+=("$required")
-done
+while IFS=$'\t' read -r result setting details; do
+  case "$result" in
+    MISSING) MISSING_CONFIG_LINES+=("$setting") ;;
+    PRESENT) log "boot setting already applies to Zero 2 W: $setting ($details)" ;;
+    IGNORED) log "boot setting does not apply to Zero 2 W and is unchanged: $setting ($details)" ;;
+    INCLUDE) log "inspected included boot configuration: $setting" ;;
+    *) die "unexpected boot configuration inspection result: $result" ;;
+  esac
+done <"$CONFIG_REPORT"
 
 CURRENT_STEP="updating apt indexes (network and repository check)"
 apt-get update
@@ -341,6 +325,7 @@ if (( SERVICE_ACTIVE == 0 )); then
 fi
 install -o root -g root -m 0755 "$SCRIPT_DIR/scripts/verify_install.sh" "$INSTALL_SCRIPTS/verify_install.sh"
 install -o root -g root -m 0755 "$SCRIPT_DIR/scripts/uninstall.sh" "$INSTALL_SCRIPTS/uninstall.sh"
+install -o root -g root -m 0755 "$SCRIPT_DIR/scripts/config_txt_inspector.py" "$INSTALL_SCRIPTS/config_txt_inspector.py"
 (
   cd "$INSTALL_SRC"
   sha256sum "${SOURCE_FILES[@]}"
