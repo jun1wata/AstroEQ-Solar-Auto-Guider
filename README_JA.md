@@ -14,6 +14,31 @@ AstroEQ Solar Auto Guiderは、Raspberry Pi Zero 2Wで動作するPC不要の太
 
 本プロジェクトは独立した非公式開発であり、AstroEQおよびPHD2/OpenPHDGuidingとは提携しておらず、承認・支援を受けたものでもありません。
 
+## 簡単インストール
+
+64ビット版Debian 13（Trixie）系OSを使用するRaspberry Pi Zero 2Wで、ネットワークとSSHを設定し、Gitが使える状態にしてから、次を実行します。
+
+```bash
+git clone https://github.com/jun1wata/AstroEQ-Solar-Auto-Guider.git
+cd AstroEQ-Solar-Auto-Guider
+sudo bash install.sh
+```
+
+インストールが正常に完了したら、表示される確認に従って再起動してください。再起動後、AstroEQ Solar Auto Guiderのサービスが自動起動します。インストール状態と接続機器は次のコマンドで確認できます。
+
+```bash
+sudo bash /opt/astroeq-solar-auto-guider/scripts/verify_install.sh \
+  --post-reboot --hardware
+```
+
+アンインストール前には、第12章の手順で通常停止を行い、赤道儀が停止していることを確認してください。
+
+```bash
+sudo bash /opt/astroeq-solar-auto-guider/scripts/uninstall.sh --stop-active
+```
+
+手動設定、接続機器の確認、トラブルシューティングについては第6〜8章を参照してください。
+
 ## 1. コントローラー
 
 ![AstroEQ Solar Auto Guiderコントローラー外観](images/IMG_5224.jpeg)

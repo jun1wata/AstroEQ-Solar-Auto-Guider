@@ -14,6 +14,31 @@ Across the top, from left to right: a USB GPS receiver, a USB camera attached to
 
 This is an independent, unofficial project. AstroEQ and PHD2/OpenPHDGuiding are not affiliated with it and have not endorsed or supported it.
 
+## Quick installation
+
+On a Raspberry Pi Zero 2W running a 64-bit Debian 13 (Trixie) system, set up networking and SSH and make sure Git is available. Then run:
+
+```bash
+git clone https://github.com/jun1wata/AstroEQ-Solar-Auto-Guider.git
+cd AstroEQ-Solar-Auto-Guider
+sudo bash install.sh
+```
+
+When the installer finishes successfully, follow the prompt to reboot. The AstroEQ Solar Auto Guider service starts automatically after reboot. To check the installation and connected hardware, run:
+
+```bash
+sudo bash /opt/astroeq-solar-auto-guider/scripts/verify_install.sh \
+  --post-reboot --hardware
+```
+
+Before uninstalling, follow the normal shutdown procedure in Chapter 12 and verify that the mount is stationary.
+
+```bash
+sudo bash /opt/astroeq-solar-auto-guider/scripts/uninstall.sh --stop-active
+```
+
+See Chapters 6–8 for manual setup, device checks, and troubleshooting.
+
 ## 1. Controller
 
 ![AstroEQ Solar Auto Guider controller exterior](images/IMG_5224.jpeg)
