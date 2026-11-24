@@ -114,10 +114,8 @@ fi
 
 if [[ -x "$VENV/bin/python" ]]; then
   PYTHON_CHECK=$(HOME="${TARGET_HOME:-/tmp}" PYTHONDONTWRITEBYTECODE=1 "$VENV/bin/python" -B - <<PY 2>&1
-import ast
 import importlib
 from importlib.metadata import version
-from pathlib import Path
 
 for module in ("cv2", "numpy", "PIL", "serial", "gpiozero", "evdev", "lgpio", "gps",
                "luma.core", "luma.oled.device"):
@@ -125,16 +123,28 @@ for module in ("cv2", "numpy", "PIL", "serial", "gpiozero", "evdev", "lgpio", "g
 from luma.oled.device import sh1107
 assert version("luma.core") == "$LUMA_CORE_VERSION"
 assert version("luma.oled") == "$LUMA_OLED_VERSION"
-for path in Path("$INSTALL_SRC").glob("*.py"):
-    ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
 print("OK")
 PY
   ) || true
   if [[ "$PYTHON_CHECK" == *OK* ]]; then
-    pass "imports, luma versions, SH1107 class, and Python syntax"
+    pass "imports, luma versions, and SH1107 class"
   else
     fail "Python verification failed: $PYTHON_CHECK"
   fi
+fi
+
+if [[ -x "$VENV/bin/python" && -x "$INSTALL_SCRIPTS/python_source_validator.py" ]]; then
+  SOURCE_CHECK=$(
+    "$VENV/bin/python" -B "$INSTALL_SCRIPTS/python_source_validator.py" \
+      --directory "$INSTALL_SRC" 2>&1
+  ) || true
+  if [[ "$SOURCE_CHECK" == Python\ source\ syntax:\ OK* ]]; then
+    pass "Python source syntax, including optional UTF-8 BOM"
+  else
+    fail "Python source syntax validation failed: $SOURCE_CHECK"
+  fi
+else
+  fail "Python source validator is unavailable"
 fi
 
 if [[ ! -x "$INSTALL_SCRIPTS/config_txt_inspector.py" ]]; then

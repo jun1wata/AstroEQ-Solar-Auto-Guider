@@ -126,6 +126,7 @@ done
 [[ -f "$SCRIPT_DIR/scripts/verify_install.sh" ]] || die "missing scripts/verify_install.sh"
 [[ -f "$SCRIPT_DIR/scripts/uninstall.sh" ]] || die "missing scripts/uninstall.sh"
 [[ -f "$SCRIPT_DIR/scripts/config_txt_inspector.py" ]] || die "missing scripts/config_txt_inspector.py"
+[[ -f "$SCRIPT_DIR/scripts/python_source_validator.py" ]] || die "missing scripts/python_source_validator.py"
 [[ -f "$SCRIPT_DIR/scripts/wheel_validator.py" ]] || die "missing scripts/wheel_validator.py"
 
 CURRENT_STEP="detecting the service account"
@@ -342,6 +343,7 @@ fi
 install -o root -g root -m 0755 "$SCRIPT_DIR/scripts/verify_install.sh" "$INSTALL_SCRIPTS/verify_install.sh"
 install -o root -g root -m 0755 "$SCRIPT_DIR/scripts/uninstall.sh" "$INSTALL_SCRIPTS/uninstall.sh"
 install -o root -g root -m 0755 "$SCRIPT_DIR/scripts/config_txt_inspector.py" "$INSTALL_SCRIPTS/config_txt_inspector.py"
+install -o root -g root -m 0755 "$SCRIPT_DIR/scripts/python_source_validator.py" "$INSTALL_SCRIPTS/python_source_validator.py"
 install -o root -g root -m 0755 "$SCRIPT_DIR/scripts/wheel_validator.py" "$INSTALL_SCRIPTS/wheel_validator.py"
 (
   cd "$INSTALL_SRC"
@@ -366,10 +368,8 @@ done
 
 CURRENT_STEP="checking Python imports and installed versions"
 HOME="$TARGET_HOME" PYTHONDONTWRITEBYTECODE=1 "$VENV/bin/python" -B - <<PY
-import ast
 import importlib
 from importlib.metadata import version
-from pathlib import Path
 
 expected = {"luma.core": "$LUMA_CORE_VERSION", "luma.oled": "$LUMA_OLED_VERSION"}
 for distribution, wanted in expected.items():
@@ -381,11 +381,10 @@ for module in ("cv2", "numpy", "PIL", "serial", "gpiozero", "evdev", "lgpio", "g
                "luma.core", "luma.oled.device"):
     importlib.import_module(module)
 from luma.oled.device import sh1107
-
-for path in Path("$INSTALL_SRC").glob("*.py"):
-    ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-print("Python imports, luma versions, SH1107 class, and source syntax: OK")
+print("Python imports, luma versions, and SH1107 class: OK")
 PY
+"$VENV/bin/python" -B "$INSTALL_SCRIPTS/python_source_validator.py" \
+  --directory "$INSTALL_SRC"
 
 CURRENT_STEP="adding device-access groups"
 NEW_GROUPS=()
