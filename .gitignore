@@ -1,0 +1,53 @@
+# Backup and temporary files
+*.bak
+*.tmp
+*.temp
+*.log
+*.orig
+*.rej
+*~
+*.swp
+*.swo
+
+# Python cache and temporary files
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Development-only PowerShell scripts
+.astroeq-*.ps1
+
+# Images not selected for the initial public release
+/images/auto_guide.jpeg
+/images/auto_guide_calib.jpeg
+/images/auto_guide_center.jpeg
+/images/auto_guide_set.jpeg
+/images/goto_home.jpeg
+/images/mount_manual.jpeg
+/images/ready.jpeg
+/images/slewing.jpeg
+/images/system.jpeg
